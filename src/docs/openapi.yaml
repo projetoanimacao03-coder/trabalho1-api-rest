@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  title: API de Gestão de Estudantes
+  description: API REST para gestão de estudantes, cursos e matrículas (Trabalho 1).
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+paths:
+  /estudantes:
+    get:
+      summary: Lista todos os estudantes
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Número da página
+        - in: query
+          name: nome
+          schema:
+            type: string
+          description: Busca por nome
+      responses:
+        '200':
+          description: Sucesso
+    post:
+      summary: Cria um novo estudante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                email:
+                  type: string
+                idade:
+                  type: integer
+              example:
+                nome: "João Silva"
+                email: "joao@email.com"
+                idade: 22
+      responses:
+        '201':
+          description: Criado com sucesso
+        '400':
+          description: Dados inválidos
+        '409':
+          description: Conflito (email existente)
