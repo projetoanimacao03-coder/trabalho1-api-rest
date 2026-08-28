@@ -1,10 +1,10 @@
 type: collection.insomnia.rest/5.0
 schema_version: "5.1"
-name: My first collection
+name: trabalho 1 (manipulando API e dados dentro do insomnia)
 meta:
   id: wrk_06e453948fb546eb9b464ffeebb89933
   created: 1787877421295
-  modified: 1787877421295
+  modified: 1787880681284
   description: ""
 collection:
   - url: http://localhost:3000/api/v1/estudantes
@@ -12,7 +12,7 @@ collection:
     meta:
       id: req_552d93d4fe2c46fe89a6236b5e26bde1
       created: 1787877421415
-      modified: 1787880524922
+      modified: 1787881525718
       isPrivate: false
       description: ""
       sortKey: -1787877421415
@@ -30,7 +30,7 @@ collection:
     meta:
       id: req_71fd75c391104f5e889dec0cd309b313
       created: 1787878263472
-      modified: 1787880551986
+      modified: 1787882286181
       isPrivate: false
       description: ""
       sortKey: -1787878263472
@@ -39,9 +39,10 @@ collection:
       mimeType: application/json
       text: |-
         {
-          "nome": "Beatriz Falsa",
-          "email": "beatriz.souza@email.com",
-          "idade": 20
+          "nome": "Fernanda Lima",
+          "email": "fernanda.lima@email.com",
+          "idade": 28,
+          "status": "ativo"
         }
     headers:
       - name: Content-Type
@@ -59,7 +60,7 @@ collection:
     meta:
       id: req_9a1884518baf4b62a1810a156bdad0bf
       created: 1787879093318
-      modified: 1787880493366
+      modified: 1787881532320
       isPrivate: false
       description: ""
       sortKey: -1787879093318
@@ -121,6 +122,24 @@ collection:
     headers:
       - name: Content-Type
         value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes/76bf10d4-255c-42e9-acc8-39c3218b27e4
+    name: New Request
+    meta:
+      id: req_77129a1f017c42f5b5faed7ebe0c5a93
+      created: 1787882333876
+      modified: 1787882384392
+      isPrivate: false
+      description: ""
+      sortKey: -1787882333876
+    method: DELETE
     settings:
       renderRequestBody: true
       encodeUrl: true
