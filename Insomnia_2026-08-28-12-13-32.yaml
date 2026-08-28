@@ -1,0 +1,248 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: trabalho 1 (manipulando API e dados dentro do insomnia)
+meta:
+  id: wrk_06e453948fb546eb9b464ffeebb89933
+  created: 1787877421295
+  modified: 1787880681284
+  description: ""
+collection:
+  - url: http://localhost:3000/docs
+    name: Api de gestão de estudantes (swagger UI)
+    meta:
+      id: req_552d93d4fe2c46fe89a6236b5e26bde1
+      created: 1787877421415
+      modified: 1787928347230
+      isPrivate: false
+      description: ""
+      sortKey: -1787877421415
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes
+    name: registros de estudantes
+    meta:
+      id: req_96e5ea5d94b045f19a0b7ea1028f14de
+      created: 1787928325519
+      modified: 1787929999835
+      isPrivate: false
+      description: ""
+      sortKey: -1787928325519
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes
+    name: New Request
+    meta:
+      id: req_e33dd5739438424c8e353951e23e99a0
+      created: 1787928459353
+      modified: 1787928567331
+      isPrivate: false
+      description: ""
+      sortKey: -1787928459353
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes/93d6f179-7185-4b03-aaf7-861b4060382e
+    name: New Request
+    meta:
+      id: req_3b83f6853c1c48bfbb7d1f767f0222b5
+      created: 1787928582702
+      modified: 1787928856162
+      isPrivate: false
+      description: ""
+      sortKey: -1787928582702
+    method: PUT
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "nome": "Tiago Almeida Silva",
+          "email": "tiago.almeida@email.com",
+          "idade": 22,
+          "status": "inativo"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes/93d6f179-7185-4b03-aaf7-861b4060382e
+    name: New Request
+    meta:
+      id: req_d5ea854f2a3b4ab99f4505a6682415b2
+      created: 1787928647678
+      modified: 1787928675560
+      isPrivate: false
+      description: ""
+      sortKey: -1787928647678
+    method: PATCH
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "status": "ativo"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes/93d6f179-7185-4b03-aaf7-861b4060382e
+    name: New Request
+    meta:
+      id: req_71cea6fe307544cabecbd2f1d08ad9cb
+      created: 1787928716914
+      modified: 1787928725473
+      isPrivate: false
+      description: ""
+      sortKey: -1787928716914
+    method: DELETE
+    body:
+      mimeType: application/json
+      text: ""
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/cursos
+    name: New Request
+    meta:
+      id: req_86a61bfdb1cb4bca8fb47d2d924d17c6
+      created: 1787928781627
+      modified: 1787928816050
+      isPrivate: false
+      description: ""
+      sortKey: -1787928781627
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "nome": "Lógica de Programação",
+          "cargaHoraria": 80
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes/8fa665b5-1c5c-4e3f-88f6-e0f60d663273
+    name: New Request
+    meta:
+      id: req_c0490aa045f64f7aacc31bab03b6195f
+      created: 1787928860878
+      modified: 1787928957914
+      isPrivate: false
+      description: ""
+      sortKey: -1787928860878
+    method: PATCH
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "status": "ativo"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3000/api/v1/estudantes/8fa665b5-1c5c-4e3f-88f6-e0f60d663273/matriculas
+    name: New Request
+    meta:
+      id: req_3815ede2efc143a7ac389ebc3a4a634b
+      created: 1787929779225
+      modified: 1787929948629
+      isPrivate: false
+      description: ""
+      sortKey: -1787929779225
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "cursoId": "8469d7a4-0514-4491-aa42-e7e1fbe8d54b"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_a4bd2d2e8abe18d9d241410bba06a34f4806d0a1
+    created: 1787877421298
+    modified: 1787877421298
+environments:
+  name: Base Environment
+  meta:
+    id: env_a4bd2d2e8abe18d9d241410bba06a34f4806d0a1
+    created: 1787877421297
+    modified: 1787877421297
+    isPrivate: false
