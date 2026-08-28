@@ -15,3 +15,16 @@ exports.validarEstudante = (req, res, next) => {
   }
   next();
 };
+
+exports.validarCurso = (req, res, next) => {
+  const { nome, cargaHoraria } = req.body;
+  if (!nome || !cargaHoraria) {
+    return res.status(400).json({
+      erro: {
+        codigo: "DADOS_INVALIDOS",
+        mensagem: "Os campos 'nome' e 'cargaHoraria' são obrigatórios."
+      }
+    });
+  }
+  next();
+};
