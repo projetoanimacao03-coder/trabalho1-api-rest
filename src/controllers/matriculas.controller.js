@@ -1,22 +1,13 @@
-const db = require('../data/db-memoria');
-const { v4: uuidv4 } = require('uuid');
+const repository = require('../repositories/matricula.repository');
+const { sendList } = require('./list-response');
 
-exports.matricular = (req, res) => {
-  const estudante = db.estudantes.find(e => e.id === req.params.idEstudante);
-  if (!estudante) return res.status(404).json({ erro: { codigo: "RECURSO_NAO_ENCONTRADO", mensagem: "Estudante não encontrado" } });
-
-  const novaMatricula = {
-    id: uuidv4(),
-    estudanteId: req.params.idEstudante,
-    cursoId: req.body.cursoId,
-    dataMatricula: new Date().toISOString()
-  };
-  
-  db.matriculas.push(novaMatricula);
-  res.status(201).json(novaMatricula);
+exports.listar = async (req, res) => sendList(res, await repository.list(req.query, req.query.estudanteId));
+exports.listarDoEstudante = async (req, res) => sendList(res, await repository.list(req.query, req.params.idEstudante));
+exports.buscarPorId = async (req, res) => {
+  const matricula = await repository.findById(req.params.id);
+  if (!matricula) return res.status(404).json({ erro: { codigo: 'MATRICULA_NAO_ENCONTRADA', mensagem: 'Matrícula não encontrada.' } });
+  res.json(matricula);
 };
-
-exports.listarDoEstudante = (req, res) => {
-  const matriculas = db.matriculas.filter(m => m.estudanteId === req.params.idEstudante);
-  res.status(200).json(matriculas);
-};
+exports.matricular = async (req, res) => res.status(201).json(await repository.create({ estudanteId: req.params.idEstudante, cursoId: req.body.cursoId }));
+exports.atualizar = async (req, res) => res.json(await repository.update(req.params.id, req.body.cursoId));
+exports.remover = async (req, res) => { await repository.remove(req.params.id); res.status(204).send(); };

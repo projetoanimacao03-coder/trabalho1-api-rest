@@ -1,8 +1,9 @@
 const express = require('express');
-const router = express.Router({ mergeParams: true }); // mergeParams é crucial para rotas aninhadas
 const controller = require('../controllers/matriculas.controller');
+const { validarMatricula } = require('../middlewares/validacao.middleware');
 
-router.post('/', controller.matricular);
+const router = express.Router({ mergeParams: true });
+router.post('/', validarMatricula, controller.matricular);
 router.get('/', controller.listarDoEstudante);
 
 module.exports = router;

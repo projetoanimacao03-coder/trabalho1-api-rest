@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Estudante {
+  id          String       @id @default(uuid())
+  nome        String
+  email       String       @unique
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  status      String       @default("ativo")
+  emprestimos Emprestimo[]
+  matriculas  Matricula[]
+
+  @@index([nome])
+  @@index([status])
+}
+
+model Curso {
+  id           String      @id @default(uuid())
+  nome         String
+  cargaHoraria Int
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  matriculas   Matricula[]
+
+  @@index([nome])
+}
+
+model Matricula {
+  id            String    @id @default(uuid())
+  estudanteId   String
+  cursoId       String
+  dataMatricula DateTime  @default(now())
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  estudante     Estudante @relation(fields: [estudanteId], references: [id], onDelete: Restrict)
+  curso         Curso     @relation(fields: [cursoId], references: [id], onDelete: Restrict)
+
+  @@unique([estudanteId, cursoId])
+}
+
+model Livro {
+  id          String           @id @default(uuid())
+  titulo      String
+  disponivel  Int              @default(5)
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  emprestimos Emprestimo[]
+  categorias  CategoriaLivro[]
+
+  @@index([titulo])
+  @@index([disponivel])
+}
+
+model Categoria {
+  id         String           @id @default(uuid())
+  nome       String           @unique
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+  livros     CategoriaLivro[]
+
+  @@index([nome])
+}
+
+model CategoriaLivro {
+  livroId     String
+  categoriaId String
+  livro       Livro     @relation(fields: [livroId], references: [id], onDelete: Restrict)
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  @@id([livroId, categoriaId])
+}
+
+model Emprestimo {
+  id          String    @id @default(uuid())
+  estudanteId String
+  livroId     String
+  data        DateTime  @default(now())
+  devolvidoEm DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  estudante   Estudante @relation(fields: [estudanteId], references: [id], onDelete: Restrict)
+  livro       Livro     @relation(fields: [livroId], references: [id], onDelete: Restrict)
+
+  @@index([estudanteId])
+  @@index([livroId])
+  @@index([devolvidoEm])
+}

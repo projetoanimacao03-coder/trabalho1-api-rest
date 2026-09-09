@@ -1,8 +1,8 @@
 const express = require('express');
-const router = express.Router();
 const controller = require('../controllers/cursos.controller');
 const { validarCurso } = require('../middlewares/validacao.middleware');
 
+const router = express.Router();
 router.get('/', controller.listar);
 router.get('/:id', controller.buscarPorId);
 router.post('/', validarCurso, controller.criar);

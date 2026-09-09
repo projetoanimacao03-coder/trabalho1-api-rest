@@ -1,51 +1,143 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: API de Gestão de Estudantes
-  description: API REST para gestão de estudantes, cursos e matrículas (Trabalho 1).
-  version: 1.0.0
+  title: API de Persistência de Estudantes
+  version: 2.0.0
+  description: API REST com Prisma, PostgreSQL, migrations e transações.
 servers:
   - url: http://localhost:3000/api/v1
 paths:
   /estudantes:
     get:
-      summary: Lista todos os estudantes
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-          description: Número da página
-        - in: query
-          name: nome
-          schema:
-            type: string
-          description: Busca por nome
-      responses:
-        '200':
-          description: Sucesso
+      summary: Lista estudantes com paginação, filtro e ordenação
+      parameters: &listParams
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: ordenar, in: query, schema: { type: string, enum: [nome, email, created_at] } }
+        - { name: direcao, in: query, schema: { type: string, enum: [asc, desc] } }
+        - { name: nome, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses: { '200': { description: Lista paginada } }
     post:
-      summary: Cria um novo estudante
+      summary: Cria estudante
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                nome:
-                  type: string
-                email:
-                  type: string
-                idade:
-                  type: integer
-              example:
-                nome: "João Silva"
-                email: "joao@email.com"
-                idade: 22
-      responses:
-        '201':
-          description: Criado com sucesso
-        '400':
-          description: Dados inválidos
-        '409':
-          description: Conflito (email existente)
+            schema: { $ref: '#/components/schemas/EstudanteInput' }
+      responses: { '201': { description: Criado }, '409': { $ref: '#/components/responses/Conflito' } }
+  /estudantes/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      summary: Busca estudante com matrículas e empréstimos
+      responses: { '200': { description: Estudante relacionado }, '404': { $ref: '#/components/responses/NaoEncontrado' } }
+    put:
+      summary: Substitui estudante
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EstudanteInput' } } }
+      responses: { '200': { description: Atualizado } }
+    patch:
+      summary: Atualiza estudante parcialmente
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EstudanteInput' } } }
+      responses: { '200': { description: Atualizado } }
+    delete:
+      summary: Remove estudante se não houver dependências
+      responses: { '204': { description: Removido }, '409': { $ref: '#/components/responses/Conflito' } }
+  /cursos:
+    get:
+      summary: Lista cursos
+      responses: { '200': { description: Lista paginada } }
+    post:
+      summary: Cria curso
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CursoInput' } } }
+      responses: { '201': { description: Criado } }
+  /cursos/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Busca curso, responses: { '200': { description: Curso relacionado } } }
+    put: { summary: Substitui curso, responses: { '200': { description: Atualizado } } }
+    patch: { summary: Atualiza curso, responses: { '200': { description: Atualizado } } }
+    delete: { summary: Remove curso, responses: { '204': { description: Removido }, '409': { $ref: '#/components/responses/Conflito' } } }
+  /estudantes/{idEstudante}/matriculas:
+    post:
+      summary: Matricula estudante em curso
+      parameters: [{ name: idEstudante, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [cursoId], properties: { cursoId: { type: string, format: uuid } } } } }
+      responses: { '201': { description: Criado }, '409': { $ref: '#/components/responses/Conflito' } }
+    get:
+      summary: Lista matrículas do estudante
+      parameters: [{ name: idEstudante, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Matrículas relacionadas } }
+  /livros:
+    get: { summary: Lista livros com categorias, responses: { '200': { description: Lista paginada } } }
+    post:
+      summary: Cria livro
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LivroInput' } } }
+      responses: { '201': { description: Criado } }
+  /livros/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Busca livro relacionado, responses: { '200': { description: Livro } } }
+    patch: { summary: Atualiza livro, responses: { '200': { description: Atualizado } } }
+    delete: { summary: Remove livro, responses: { '204': { description: Removido }, '409': { $ref: '#/components/responses/Conflito' } } }
+  /categorias:
+    get: { summary: Lista categorias com livros, responses: { '200': { description: Lista paginada } } }
+    post:
+      summary: Cria categoria
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [nome], properties: { nome: { type: string } } } } }
+      responses: { '201': { description: Criada } }
+  /categorias/{id}/livros:
+    post:
+      summary: Vincula livro à categoria
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [livroId], properties: { livroId: { type: string, format: uuid } } } } }
+      responses: { '201': { description: Vínculo criado }, '409': { $ref: '#/components/responses/Conflito' } }
+  /emprestimos:
+    get: { summary: Lista empréstimos, responses: { '200': { description: Lista paginada } } }
+    post:
+      summary: Cria empréstimo e decrementa disponibilidade em transação
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [estudanteId, livroId], properties: { estudanteId: { type: string, format: uuid }, livroId: { type: string, format: uuid } } } } }
+      responses: { '201': { description: Criado }, '409': { $ref: '#/components/responses/Conflito' } }
+  /emprestimos/{id}/devolucao:
+    post:
+      summary: Devolve empréstimo e incrementa disponibilidade em transação
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: Devolvido }, '409': { $ref: '#/components/responses/Conflito' } }
+components:
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    NaoEncontrado: { description: Registro inexistente }
+    Conflito: { description: Violação de integridade ou registro duplicado }
+  schemas:
+    EstudanteInput:
+      type: object
+      required: [nome, email]
+      properties:
+        nome: { type: string }
+        email: { type: string, format: email }
+        status: { type: string, enum: [ativo, inativo] }
+    CursoInput:
+      type: object
+      required: [nome, cargaHoraria]
+      properties:
+        nome: { type: string }
+        cargaHoraria: { type: integer, minimum: 1 }
+    LivroInput:
+      type: object
+      required: [titulo]
+      properties:
+        titulo: { type: string }
+        disponivel: { type: integer, minimum: 0 }
