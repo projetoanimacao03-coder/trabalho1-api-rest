@@ -150,18 +150,45 @@ GET /api/v1/emprestimos?ativo=true&ordenar=data&direcao=desc
 - Devolver empréstimo também atualiza o livro e o empréstimo na mesma transação.
 - Falhas de conexão retornam `503` sem derrubar o servidor nem expor SQL do PostgreSQL.
 
+## Arquitetura do Trabalho 3
+
+A arquitetura adotada é **Camadas + MVC**. O fluxo é `routes -> controllers -> services -> repositories`. O Prisma e o PostgreSQL ficam isolados nos repositories; o `src/config/container.js` monta as dependências por injeção.
+
+Os padrões aplicados são Repository, Injeção de Dependência e Strategy. A documentação completa, o diagrama e os ADRs estão em [ARQUITETURA.md](ARQUITETURA.md) e [docs/adr](docs/adr).
+
+O adapter `src/repositories/memoria/emprestimo-em-memoria.repository.js` substitui o adapter Prisma nos testes sem alterar o service. Isso permite testar as regras de empréstimo sem banco.
+
 ## Organização
 
 - `prisma/schema.prisma`: modelo relacional.
 - `prisma/migrations`: histórico versionado.
 - `prisma/seed.js`: dados de demonstração.
 - `src/repositories`: único local das consultas Prisma.
-- `src/controllers`: tradução entre HTTP e repositories.
+- `src/controllers`: tradução entre HTTP e services.
+- `src/services`: casos de uso e orquestração, sem `req` ou `res`.
+- `src/domain`: regras independentes de infraestrutura, incluindo a Strategy de multa.
+- `src/config/container.js`: composição das dependências de produção.
 - `src/routes`: rotas da API.
 - `src/middlewares`: validação e tratamento de erros.
+- `tests/unit`: testes de serviço com adapter em memória, sem PostgreSQL.
+- `tests/integration`: testes HTTP com Supertest.
 - `src/docs/openapi.yaml`: contrato Swagger.
 
-## Testes rápidos
+## Testes automatizados
+
+Os testes não exigem banco de dados:
+
+```bash
+npm test
+```
+
+São 9 testes: 6 unitários do serviço/domínio e 3 de integração HTTP. Para desenvolvimento contínuo:
+
+```bash
+npm run test:watch
+```
+
+## Execução da API
 
 ```bash
 npm run prisma:generate

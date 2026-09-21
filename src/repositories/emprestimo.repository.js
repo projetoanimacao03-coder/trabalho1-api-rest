@@ -1,5 +1,4 @@
 const prisma = require('../data/prisma');
-const AppError = require('../errors/app-error');
 const { listOptions } = require('./query-options');
 
 async function list(query) {
@@ -18,33 +17,24 @@ async function list(query) {
 
 function findById(id) { return prisma.emprestimo.findUnique({ where: { id }, include: { estudante: true, livro: true } }); }
 
-async function create({ estudanteId, livroId }) {
-  return prisma.$transaction(async (tx) => {
-    const [estudante, livro] = await Promise.all([
-      tx.estudante.findUnique({ where: { id: estudanteId } }),
-      tx.livro.findUnique({ where: { id: livroId } })
-    ]);
-    if (!estudante) throw new AppError(404, 'ESTUDANTE_NAO_ENCONTRADO', 'Estudante não encontrado.');
-    if (!livro) throw new AppError(404, 'LIVRO_NAO_ENCONTRADO', 'Livro não encontrado.');
-    if (livro.disponivel <= 0) throw new AppError(409, 'LIVRO_INDISPONIVEL', 'Livro sem exemplares disponíveis.');
-
-    const ativo = await tx.emprestimo.findFirst({ where: { estudanteId, livroId, devolvidoEm: null } });
-    if (ativo) throw new AppError(409, 'EMPRESTIMO_ATIVO', 'Este estudante já possui este livro emprestado.');
-
-    const atualizado = await tx.livro.updateMany({ where: { id: livroId, disponivel: { gt: 0 } }, data: { disponivel: { decrement: 1 } } });
-    if (atualizado.count !== 1) throw new AppError(409, 'LIVRO_INDISPONIVEL', 'Livro ficou indisponível durante a operação.');
-    return tx.emprestimo.create({ data: { estudanteId, livroId }, include: { estudante: true, livro: true } });
-  });
+function createTransactionRepository(client) {
+  return {
+    findEstudante: (id) => client.estudante.findUnique({ where: { id } }),
+    findLivro: (id) => client.livro.findUnique({ where: { id } }),
+    findById: (id) => client.emprestimo.findUnique({ where: { id } }),
+    findAtivo: (estudanteId, livroId) => client.emprestimo.findFirst({ where: { estudanteId, livroId, devolvidoEm: null } }),
+    decrementarDisponibilidade: async (id) => {
+      const result = await client.livro.updateMany({ where: { id, disponivel: { gt: 0 } }, data: { disponivel: { decrement: 1 } } });
+      if (result.count !== 1) throw new Error('Livro ficou indisponivel durante a operacao.');
+    },
+    incrementarDisponibilidade: (id) => client.livro.update({ where: { id }, data: { disponivel: { increment: 1 } } }),
+    insert: (data) => client.emprestimo.create({ data, include: { estudante: true, livro: true } }),
+    markAsReturned: (id) => client.emprestimo.update({ where: { id }, data: { devolvidoEm: new Date() }, include: { estudante: true, livro: true } })
+  };
 }
 
-async function devolver(id) {
-  return prisma.$transaction(async (tx) => {
-    const emprestimo = await tx.emprestimo.findUnique({ where: { id } });
-    if (!emprestimo) throw new AppError(404, 'EMPRESTIMO_NAO_ENCONTRADO', 'Empréstimo não encontrado.');
-    if (emprestimo.devolvidoEm) throw new AppError(409, 'EMPRESTIMO_DEVOLVIDO', 'Este empréstimo já foi devolvido.');
-    await tx.livro.update({ where: { id: emprestimo.livroId }, data: { disponivel: { increment: 1 } } });
-    return tx.emprestimo.update({ where: { id }, data: { devolvidoEm: new Date() }, include: { estudante: true, livro: true } });
-  });
+function withTransaction(work) {
+  return prisma.$transaction((tx) => work(createTransactionRepository(tx)));
 }
 
-module.exports = { list, findById, create, devolver };
+module.exports = { list, findById, withTransaction };
