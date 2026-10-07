@@ -1,9 +1,9 @@
 type: collection.insomnia.rest/5.0
 schema_version: "5.1"
-name: Trabalho 2 - API Prisma PostgreSQL
+name: Trabalho 4 - Acervo ao Vivo (API Prisma PostgreSQL)
 meta:
   id: wrk_trabalho2_prisma
-  description: Coleção com os fluxos principais da persistência.
+  description: Requisições REST para estudantes, cursos, matrículas, livros, categorias e empréstimos.
 collection:
   - name: Saúde e documentação
     meta: { id: fld_docs, description: "" }

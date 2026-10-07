@@ -1,3 +1,6 @@
 node_modules/
-.env
+/.env
 dist/
+.env.*
+!.env.example
+/5_trabalho_4.pdf

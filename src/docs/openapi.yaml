@@ -1,10 +1,34 @@
 openapi: 3.0.3
 info:
-  title: API de Persistência de Estudantes
-  version: 2.0.0
-  description: API REST com Prisma, PostgreSQL, migrations e transações.
+  title: Acervo ao Vivo - API de Gestão Educacional
+  version: 4.0.0
+  description: API REST com Prisma, PostgreSQL, migrations, transações e notificações Socket.IO.
 servers:
   - url: http://localhost:3000/api/v1
+x-websocket:
+  url: ws://localhost:3000/socket.io/
+  protocol: Socket.IO 4 (Engine.IO 4)
+  rooms:
+    - biblioteca
+    - livro:{livroId}
+    - emprestimo:{emprestimoId}
+  clientEvents:
+    - biblioteca:entrar
+    - biblioteca:sair
+    - livro:acompanhar
+    - livro:parar
+    - emprestimo:acompanhar
+    - emprestimo:parar
+  serverEvents:
+    - conexao:estado
+    - biblioteca:sala
+    - livro:sala
+    - emprestimo:sala
+    - emprestimo:criado
+    - emprestimo:devolvido
+    - livro:disponibilidade
+    - biblioteca:atualizacao
+    - erro:validacao
 paths:
   /estudantes:
     get:

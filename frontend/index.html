@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#102a43">
+    <meta name="description" content="Acompanhamento de empréstimos educacionais com atualizações em tempo real.">
+    <title>Acervo ao vivo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js" defer></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Acervo ao vivo, início">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span>Acervo <span class="brand-light">ao vivo</span></span>
+      </a>
+      <div class="connection" role="status" aria-live="polite">
+        <span id="connection-dot" class="connection-dot"></span>
+        <span id="connection-label">Conectando...</span>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">GESTÃO EDUCACIONAL EM TEMPO REAL</p>
+          <h1>Empréstimos sem perder o ritmo.</h1>
+          <p class="intro-copy">Cadastre estudantes e livros, acompanhe retiradas e veja as mudanças chegarem ao vivo para toda a equipe.</p>
+        </div>
+        <div class="live-pill"><span aria-hidden="true"></span> PAINEL AO VIVO</div>
+      </section>
+
+      <section class="stats" aria-label="Resumo do acervo">
+        <article class="stat-card">
+          <span class="stat-label">Estudantes</span>
+          <strong id="student-count">—</strong>
+          <span class="stat-note">cadastrados</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Títulos no acervo</span>
+          <strong id="book-count">—</strong>
+          <span class="stat-note">com disponibilidade atualizada</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Empréstimos ativos</span>
+          <strong id="loan-count">—</strong>
+          <span class="stat-note">sincronizados entre clientes</span>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="primary-column">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">OPERAÇÃO</p>
+                <h2>Registrar empréstimo</h2>
+              </div>
+              <span class="step-number">01</span>
+            </div>
+            <form id="loan-form" class="form-grid">
+              <label>
+                Estudante
+                <select id="loan-student" name="estudanteId" required>
+                  <option value="">Carregando estudantes...</option>
+                </select>
+              </label>
+              <label>
+                Livro disponível
+                <select id="loan-book" name="livroId" required>
+                  <option value="">Carregando livros...</option>
+                </select>
+              </label>
+              <button class="button button-primary" type="submit">Confirmar empréstimo <span aria-hidden="true">→</span></button>
+              <p id="loan-feedback" class="form-feedback" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">ACOMPANHAMENTO</p>
+                <h2>Empréstimos em andamento</h2>
+              </div>
+              <span class="live-label"><span></span> Atualiza ao vivo</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Estudante</th><th>Livro</th><th>Retirado em</th><th>Ação</th></tr>
+                </thead>
+                <tbody id="loan-list">
+                  <tr><td class="empty-cell" colspan="4">Carregando empréstimos...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <aside class="side-column">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">NOVO CADASTRO</p>
+                <h2>Estudante</h2>
+              </div>
+            </div>
+            <form id="student-form" class="stacked-form">
+              <label>Nome<input name="nome" autocomplete="name" maxlength="120" required></label>
+              <label>E-mail<input name="email" type="email" autocomplete="email" maxlength="160" required></label>
+              <button class="button button-secondary" type="submit">Adicionar estudante</button>
+              <p id="student-feedback" class="form-feedback" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">NOVO CADASTRO</p>
+                <h2>Livro</h2>
+              </div>
+            </div>
+            <form id="book-form" class="stacked-form">
+              <label>Título<input name="titulo" maxlength="180" required></label>
+              <button class="button button-secondary" type="submit">Adicionar livro</button>
+              <p id="book-feedback" class="form-feedback" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section class="panel inventory-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">DISPONIBILIDADE</p>
+                <h2>Acervo</h2>
+              </div>
+            </div>
+            <ul id="book-list" class="book-list">
+              <li class="empty-state">Carregando acervo...</li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+
+      <section class="activity-panel" aria-labelledby="activity-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">WEBSOCKET</p>
+            <h2 id="activity-title">Atividade recente</h2>
+          </div>
+          <button id="refresh-button" class="text-button" type="button">Atualizar dados</button>
+        </div>
+        <ol id="activity-list" class="activity-list" aria-live="polite">
+          <li class="empty-state">Aguardando atualizações do servidor.</li>
+        </ol>
+      </section>
+      <p id="page-error" class="page-error" role="alert"></p>
+    </main>
+
+    <footer class="footer">
+      <span>Acervo ao vivo · API REST + Prisma + PostgreSQL + Socket.IO</span>
+      <a href="#" id="api-docs-link" target="_blank" rel="noreferrer">Documentação da API ↗</a>
+    </footer>
+  </body>
+</html>

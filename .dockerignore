@@ -1,0 +1,9 @@
+.git
+.env
+.vscode
+node_modules
+coverage
+tests
+frontend
+5_trabalho_4.pdf
+Insomnia_*.yaml

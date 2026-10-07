@@ -8,7 +8,7 @@ Foi adotada a **Arquitetura em Camadas + MVC (Opcao A)**. A API publica permanec
 
 ```mermaid
 flowchart LR
-    HTTP[Insomnia / cliente HTTP] --> Routes[Routes]
+    HTTP[Insomnia / front-end] --> Routes[Routes]
     Routes --> Controllers[Controllers MVC]
     Controllers --> Services[Services / casos de uso]
     Services --> Repositories[Repositories]
@@ -16,6 +16,10 @@ flowchart LR
     Prisma --> PostgreSQL[(PostgreSQL)]
     Services --> Strategy[Strategy de multa]
     Controllers --> Errors[Middleware de erro]
+    Controllers --> Events[Publicador de eventos]
+    Frontend[Front-end] <--> SocketIO[Socket.IO no servidor HTTP]
+    SocketIO --> Rooms[Salas biblioteca / livro / empréstimo]
+    Events --> SocketIO
 ```
 
 ## Responsabilidades
@@ -27,6 +31,9 @@ flowchart LR
 - `domain`: regras puras que podem variar, como o calculo de multa.
 - `middlewares`: validacao de entrada e tratamento padronizado de erros.
 - `config/container.js`: composition root; monta repositorios, services e strategies.
+- `realtime/socket-server.js`: configura Socket.IO no mesmo servidor HTTP, valida eventos recebidos e administra salas.
+- `realtime/notificacoes.js`: publica os eventos de empréstimo/devolução depois do service concluir a transação.
+- `config/origins.js`: origens permitidas para chamadas HTTP e conexões Socket.IO.
 
 ## Fluxo de uma requisicao
 
@@ -36,7 +43,12 @@ flowchart LR
 4. O service delega a operacao ao contrato do repositorio injetado.
 5. O adapter Prisma executa a transacao: valida estudante/livro, decrementa disponibilidade e cria o emprestimo.
 6. O resultado retorna pelo service ao controller, que responde `201` em JSON.
-7. Falhas passam pelo `erro.middleware`, que traduz erros de dominio, integridade e banco para o contrato HTTP existente.
+7. Depois da transação concluir, o controller publica `emprestimo:criado`, `livro:disponibilidade` e `biblioteca:atualizacao` nas salas pertinentes.
+8. Falhas passam pelo `erro.middleware`, que traduz erros de dominio, integridade e banco para o contrato HTTP existente; nenhuma notificação de sucesso é emitida antes da persistência.
+
+## Tempo real
+
+O servidor HTTP criado em `server.js` atende a API REST e o Socket.IO. O front-end entra na sala `biblioteca`; clientes também podem observar salas `livro:<UUID>` e `emprestimo:<UUID>`. Os seis eventos recebidos do cliente validam payloads e UUIDs antes de alterar a associação às salas. O Socket.IO remove as salas na desconexão. O processo encerra conexões HTTP e WebSocket em `SIGINT`, `SIGTERM` e `SIGHUP`.
 
 ## Padroes aplicados
 

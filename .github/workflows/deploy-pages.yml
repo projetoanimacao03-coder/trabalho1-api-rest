@@ -1,0 +1,46 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - frontend/**
+      - .github/workflows/deploy-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate and configure API URL
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::Configure the API_BASE_URL repository variable with the public HTTPS backend URL."
+            exit 1
+          fi
+          node -e "require('node:fs').writeFileSync('frontend/config.js', 'window.APP_CONFIG = Object.freeze({ API_BASE_URL: ' + JSON.stringify(process.env.API_BASE_URL) + ' });\n');"
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static frontend
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

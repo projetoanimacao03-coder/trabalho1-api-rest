@@ -1,206 +1,260 @@
-# Trabalho 2: API REST com Prisma e PostgreSQL
+# Trabalho 4 — Acervo ao Vivo
 
-API de gestão de estudantes, cursos, livros, categorias, matrículas e empréstimos. O armazenamento é PostgreSQL e todo acesso aos dados é feito por Prisma ORM.
+Aplicação web para acompanhar livros e empréstimos de uma biblioteca educacional. Inclui interface HTML/CSS/JavaScript, API REST em Node.js/Express, PostgreSQL com Prisma e notificações em tempo real com Socket.IO.
 
-## Requisitos
+Este guia é voltado a quem acabou de baixar o repositório e quer executar o projeto no próprio computador.
 
-- Node.js 20 ou superior
-- PostgreSQL 15 ou superior
-- npm
+## O que você precisa
 
-## Instalação do zero
+- Git.
+- Node.js 20 ou superior (inclui npm).
+- Um PostgreSQL local **ou** Podman Desktop com máquina e provedor Compose configurados.
+- Insomnia, caso queira testar a API com uma coleção de requisições.
 
-1. Instale as dependências:
+Não é necessário instalar Docker Desktop: os comandos de containerização deste guia usam Podman.
 
-```bash
+## 1. Baixe o projeto
+
+Abra PowerShell na pasta onde deseja guardar o projeto:
+
+```powershell
+git clone https://github.com/projetoanimacao03-coder/trabalho1-api-rest.git
+cd trabalho1-api-rest
 npm install
 ```
 
-2. Copie `.env.example` para `.env` e informe as credenciais locais:
+## 2. Escolha como executar o PostgreSQL
 
-```env
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/postgres?schema=public"
-PORT=3000
+Use **uma** das opções abaixo.
+
+### Opção A — PostgreSQL em container Podman (recomendado)
+
+Instale e abra o [Podman Desktop](https://podman-desktop.io/). No PowerShell, verifique a máquina e o provedor Compose:
+
+```powershell
+podman machine list
+podman machine start
+podman compose version
 ```
 
-O arquivo `.env` não deve ser versionado.
+Se ainda não houver uma máquina Podman, crie-a e inicie-a:
 
-3. Gere o Prisma Client e aplique as migrations:
-
-```bash
-npm run prisma:generate
-npm run migrate:deploy
-npm run prisma:seed
+```powershell
+podman machine init
+podman machine start
 ```
 
-4. Inicie a API:
+Se `podman compose version` indicar que não há provedor Compose, habilite/instale o provedor nas configurações do Podman Desktop e tente novamente.
 
-```bash
-npm start
+Crie seu arquivo local de configuração sem substituir um arquivo `.env` que já exista:
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+notepad .env
 ```
 
-Documentação Swagger: `http://localhost:3000/docs`
+No `.env`, escolha uma senha local e coloque o mesmo valor em `POSTGRES_PASSWORD` e na senha dentro de `DATABASE_URL`. Use uma senha sem `@`, `/`, `:`, `#` para evitar problemas de codificação na URL. Preserve o nome de banco e o usuário configurados no arquivo.
 
-## Migrations
+Suba o banco e a API:
 
-As migrations são versionadas em `prisma/migrations` e não devem ser editadas depois de aplicadas:
-
-- `20260909021025_init_postgresql`: cria as sete tabelas, chaves, auditoria e restrições básicas.
-- `20260909091500_persistencia_integridade_indices`: adiciona status, controle de devolução e índices das consultas frequentes.
-
-Para recriar somente o banco local durante o desenvolvimento:
-
-```bash
-npm run migrate:reset
-npm run prisma:seed
+```powershell
+podman compose up --build -d
+podman compose ps
+podman compose logs --tail 50 api
 ```
 
-## Modelo de dados
+O serviço da API aplica as migrations na inicialização. Confirme que o banco e a API estão ativos:
 
-```mermaid
-erDiagram
-    ESTUDANTE ||--o{ MATRICULA : realiza
-    CURSO ||--o{ MATRICULA : possui
-    ESTUDANTE ||--o{ EMPRESTIMO : faz
-    LIVRO ||--o{ EMPRESTIMO : recebe
-    LIVRO ||--o{ CATEGORIA_LIVRO : classifica
-    CATEGORIA ||--o{ CATEGORIA_LIVRO : agrupa
-
-    ESTUDANTE {
-      string id PK
-      string nome
-      string email UK
-      string status
-      datetime created_at
-      datetime updated_at
-    }
-    CURSO {
-      string id PK
-      string nome
-      int cargaHoraria
-      datetime created_at
-      datetime updated_at
-    }
-    MATRICULA {
-      string id PK
-      string estudanteId FK
-      string cursoId FK
-      datetime dataMatricula
-    }
-    LIVRO {
-      string id PK
-      string titulo
-      int disponivel
-      datetime created_at
-      datetime updated_at
-    }
-    CATEGORIA {
-      string id PK
-      string nome UK
-      datetime created_at
-      datetime updated_at
-    }
-    CATEGORIA_LIVRO {
-      string livroId PK, FK
-      string categoriaId PK, FK
-    }
-    EMPRESTIMO {
-      string id PK
-      string estudanteId FK
-      string livroId FK
-      datetime data
-      datetime devolvidoEm
-    }
+```powershell
+Invoke-RestMethod http://localhost:3000/health
 ```
 
-A convenção de tabelas e campos é camelCase para chaves de relacionamento e snake_case para auditoria, conforme os nomes do schema Prisma.
+Uma resposta `status: ok` indica que a API está disponível.
 
-## Endpoints
+### Opção B — PostgreSQL já instalado no computador
 
-Todos usam o prefixo `/api/v1`.
+No pgAdmin, crie ou escolha um banco de dados e confirme o nome, o usuário, a senha e a porta do servidor PostgreSQL. Por padrão, o PostgreSQL usa a porta `5432`.
 
-- `GET/POST /estudantes`
-- `GET/PATCH/PUT/DELETE /estudantes/:id`
-- `GET/POST /cursos`
-- `GET/PATCH/PUT/DELETE /cursos/:id`
-- `GET /estudantes/:idEstudante/matriculas`
-- `POST /estudantes/:idEstudante/matriculas`
-- `GET /matriculas`, `GET /matriculas/:id`, `DELETE /matriculas/:id`
-- `GET/POST /livros`, `GET/PATCH/DELETE /livros/:id`
-- `GET/POST /categorias`, `GET/PATCH/DELETE /categorias/:id`
-- `POST /categorias/:id/livros`
-- `GET/POST /emprestimos`, `GET /emprestimos/:id`
-- `POST /emprestimos/:id/devolucao`
+Crie a configuração local:
 
-Listagens aceitam `page`, `limit`, `ordenar` e `direcao=asc|desc`. Cada filtro é aplicado no banco, por exemplo:
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+notepad .env
+```
+
+Edite `DATABASE_URL` com os dados do seu PostgreSQL, no formato:
 
 ```text
-GET /api/v1/livros?titulo=po&ordenar=titulo&direcao=asc&page=1&limit=10
-GET /api/v1/emprestimos?ativo=true&ordenar=data&direcao=desc
+postgresql://USUARIO:SENHA@localhost:5432/NOME_DO_BANCO?schema=public
 ```
 
-`GET /estudantes/:id`, `GET /livros/:id` e `GET /categorias/:id` retornam dados relacionados com `include`, evitando N+1.
+Edite `POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD` também, se for usar esses valores mais tarde com Podman. Para esta opção, a API usa `DATABASE_URL` e você **não** precisa iniciar um banco com `podman compose`.
 
-## Integridade e transação
+Gere o cliente Prisma e crie as tabelas no banco selecionado:
 
-- Emails, nomes de categorias e matrículas repetidas retornam `409`.
-- Chaves estrangeiras inexistentes retornam `404` ou `409`, conforme a operação.
-- Exclusões que possuem relações dependentes são bloqueadas com `409`.
-- Criar empréstimo valida estudante, livro e disponibilidade dentro de uma transação; a criação do empréstimo e o decremento de `Livro.disponivel` são atômicos.
-- Devolver empréstimo também atualiza o livro e o empréstimo na mesma transação.
-- Falhas de conexão retornam `503` sem derrubar o servidor nem expor SQL do PostgreSQL.
-
-## Arquitetura do Trabalho 3
-
-A arquitetura adotada é **Camadas + MVC**. O fluxo é `routes -> controllers -> services -> repositories`. O Prisma e o PostgreSQL ficam isolados nos repositories; o `src/config/container.js` monta as dependências por injeção.
-
-Os padrões aplicados são Repository, Injeção de Dependência e Strategy. A documentação completa, o diagrama e os ADRs estão em [ARQUITETURA.md](ARQUITETURA.md) e [docs/adr](docs/adr).
-
-O adapter `src/repositories/memoria/emprestimo-em-memoria.repository.js` substitui o adapter Prisma nos testes sem alterar o service. Isso permite testar as regras de empréstimo sem banco.
-
-## Organização
-
-- `prisma/schema.prisma`: modelo relacional.
-- `prisma/migrations`: histórico versionado.
-- `prisma/seed.js`: dados de demonstração.
-- `src/repositories`: único local das consultas Prisma.
-- `src/controllers`: tradução entre HTTP e services.
-- `src/services`: casos de uso e orquestração, sem `req` ou `res`.
-- `src/domain`: regras independentes de infraestrutura, incluindo a Strategy de multa.
-- `src/config/container.js`: composição das dependências de produção.
-- `src/routes`: rotas da API.
-- `src/middlewares`: validação e tratamento de erros.
-- `tests/unit`: testes de serviço com adapter em memória, sem PostgreSQL.
-- `tests/integration`: testes HTTP com Supertest.
-- `src/docs/openapi.yaml`: contrato Swagger.
-
-## Testes automatizados
-
-Os testes não exigem banco de dados:
-
-```bash
-npm test
-```
-
-São 9 testes: 6 unitários do serviço/domínio e 3 de integração HTTP. Para desenvolvimento contínuo:
-
-```bash
-npm run test:watch
-```
-
-## Execução da API
-
-```bash
-npm run prisma:generate
+```powershell
+npx prisma generate
 npm run migrate:deploy
+```
+
+> **Atenção:** as migrations criam/alteram tabelas no banco indicado por `DATABASE_URL`. Confira o nome do banco antes de executá-las.
+
+## 3. (Opcional) Carregue os dados de demonstração
+
+Se estiver usando um banco novo e vazio, você pode inserir os registros de demonstração:
+
+Com Podman:
+
+```powershell
+podman compose exec api npm run prisma:seed
+```
+
+Com PostgreSQL local:
+
+```powershell
 npm run prisma:seed
+```
+
+**O seed apaga os registros existentes das tabelas do projeto e cria dados de exemplo. Não o execute em um banco com informações que queira preservar.**
+
+## 4. Abra o front-end
+
+Se escolheu **Podman**, deixe os containers ativos e abra um novo PowerShell na pasta do projeto. Se escolheu **PostgreSQL local**, inicie primeiro a API no PowerShell:
+
+```powershell
 npm start
 ```
 
-Em outra janela:
+Mantenha essa janela aberta. Em outra janela PowerShell, inicie o servidor do front-end:
 
-```bash
-curl http://localhost:3000/health
-curl "http://localhost:3000/api/v1/estudantes?ordenar=nome&direcao=asc"
-curl "http://localhost:3000/api/v1/estudantes/<id>"
+```powershell
+npm run frontend:dev
+```
+
+Abra **http://localhost:5500** no navegador. O front-end local se conecta à API em `http://localhost:3000`; deve aparecer o estado de conexão em tempo real e, quando houver registros, a lista de estudantes, livros e empréstimos.
+
+Para testar a sincronização, abra a página em duas janelas do navegador. Registre um empréstimo ou devolução em uma janela e confira a atualização ao vivo na outra.
+
+O front-end permite:
+
+- cadastrar estudantes e livros;
+- registrar empréstimos e devoluções;
+- consultar disponibilidade dos livros e empréstimos ativos;
+- receber atualizações pelo WebSocket quando os registros mudam.
+
+## 5. Teste a API no Insomnia
+
+O projeto disponibiliza:
+
+- Saúde da API: `http://localhost:3000/health`
+- Documentação Swagger: `http://localhost:3000/docs`
+- Endpoints REST: `http://localhost:3000/api/v1`
+
+No Insomnia, importe o arquivo `Insomnia_2026-08-28-12-13-32.yaml` da pasta do projeto. O ambiente inicial usa `http://localhost:3000`. Para requisições que dependem de IDs, execute primeiro as criações ou use IDs retornados pelo seed.
+
+Principais recursos:
+
+| Recurso | Endpoints |
+|---|---|
+| Estudantes | `GET/POST /estudantes`; `GET/PUT/PATCH/DELETE /estudantes/:id` |
+| Cursos | `GET/POST /cursos`; `GET/PUT/PATCH/DELETE /cursos/:id` |
+| Matrículas | `GET/POST /estudantes/:idEstudante/matriculas`; `GET /matriculas`; `GET/DELETE /matriculas/:id` |
+| Livros | `GET/POST /livros`; `GET/PUT/PATCH/DELETE /livros/:id` |
+| Categorias | `GET/POST /categorias`; `GET/PATCH/DELETE /categorias/:id`; `POST /categorias/:id/livros` |
+| Empréstimos | `GET/POST /emprestimos`; `GET /emprestimos/:id`; `POST /emprestimos/:id/devolucao` |
+
+Exemplo de listagem paginada de empréstimos ativos:
+
+```text
+GET http://localhost:3000/api/v1/emprestimos?ativo=true&ordenar=data&direcao=desc&page=1&limit=10
+```
+
+## 6. Eventos em tempo real
+
+O Socket.IO usa o mesmo servidor e endereço da API. O front-end entra automaticamente na sala `biblioteca` e escuta os eventos de empréstimo, devolução e disponibilidade.
+
+Clientes Socket.IO podem enviar:
+
+| Evento | Payload |
+|---|---|
+| `biblioteca:entrar` / `biblioteca:sair` | Sem payload |
+| `livro:acompanhar` / `livro:parar` | `{ "livroId": "<UUID>" }` |
+| `emprestimo:acompanhar` / `emprestimo:parar` | `{ "emprestimoId": "<UUID>" }` |
+
+O servidor emite, entre outros, `conexao:estado`, `emprestimo:criado`, `emprestimo:devolvido`, `livro:disponibilidade` e `biblioteca:atualizacao`. Entradas e UUIDs são validados pelo servidor.
+
+## 7. Testes
+
+Os testes automatizados não precisam de conexão com o PostgreSQL:
+
+```powershell
+npm test
+npm run lint
+```
+
+## 8. Parar os serviços
+
+Para parar a API e o front-end iniciados diretamente, pressione `Ctrl+C` nas respectivas janelas.
+
+Para parar os containers Podman e preservar os dados:
+
+```powershell
+podman compose down
+```
+
+Para remover também o volume do banco Podman, apagando permanentemente os dados:
+
+```powershell
+podman compose down -v
+```
+
+## Publicação opcional
+
+O front-end estático pode ser publicado no GitHub Pages; a API e o PostgreSQL precisam estar disponíveis em um servidor acessível por HTTPS/WSS. O repositório inclui `render.yaml` para criar a API e o banco no Render e um workflow para publicar o diretório `frontend`.
+
+Para Pages, configure a origem **GitHub Actions** em **Settings → Pages** e adicione a variável `API_BASE_URL` em **Settings → Secrets and variables → Actions → Variables**, com a URL HTTPS pública da API. O workflow publica o front-end quando há alterações nele na branch `main`.
+
+Este projeto acadêmico não implementa autenticação: CORS limita origens de navegador, mas não impede chamadas diretas à API. Use dados fictícios; não publique nem insira dados pessoais ou sensíveis.
+
+## Estrutura do projeto
+
+- `frontend/`: interface web e servidor estático para desenvolvimento local.
+- `src/routes`, `src/controllers`, `src/services`, `src/repositories`: API organizada em camadas.
+- `src/realtime/`: servidor Socket.IO e notificações após persistência.
+- `prisma/schema.prisma`: modelos PostgreSQL.
+- `prisma/migrations/`: histórico de alterações do banco.
+- `prisma/seed.js`: dados de demonstração.
+- `compose.yaml`, `Dockerfile`: execução com Podman Compose.
+- `Insomnia_2026-08-28-12-13-32.yaml`: coleção de requisições REST.
+- `ARQUITETURA.md`, `docs/adr/`: documentação de arquitetura e decisões.
+
+## Proteja arquivos locais antes de enviar alterações
+
+O arquivo `.env` contém credenciais locais e o PDF da atividade é material de referência. Ambos são ignorados pelo Git e não devem ser publicados. Não use `git add .`.
+
+Na raiz do repositório, confira o estado:
+
+```powershell
+git status
+git check-ignore -v .env 5_trabalho_4.pdf
+```
+
+Adicione somente os arquivos de código e documentação que deseja publicar, sem incluir `.env`, `5_trabalho_4.pdf` ou `.vscode`:
+
+```powershell
+git add .gitignore README.md .env.example .eslintrc.json .dockerignore Dockerfile compose.yaml render.yaml .github frontend app.js server.js src tests package.json package-lock.json ARQUITETURA.md Insomnia_2026-08-28-12-13-32.yaml
+```
+
+Antes de criar o commit, confira a lista preparada e confirme que os arquivos locais não estão nela:
+
+```powershell
+git diff --cached --name-only
+git diff --cached --name-only -- .env 5_trabalho_4.pdf
+```
+
+O segundo comando não deve listar nenhum arquivo. Depois, crie e envie o commit:
+
+```powershell
+git commit -m "docs: rewrite setup and usage guide" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git push origin main
 ```
